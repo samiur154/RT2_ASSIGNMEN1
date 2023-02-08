@@ -1,27 +1,39 @@
-# First Assignment of the Research Track 2 course (Robotics Engineering_5051520, Unige)
-## Coppeliasim Package:
-This package helps to control the robot in the Coppeliasim environment using 'got_to_point' behaviour.And a random goal poses is generated and robot aligns itself towards that point.it sets the linear velocity to drive to the goal position,and one the goal position is reached then it adjusts to attain the required angular position.if the robot is not stopped the process will be operated in a loop by generating new target destination and pose.the robot's 'go_to_point' is implemented as server.the robot can be stopped only when it reaches the goal and the robot will be restarted when the new goal is arrived.this process will be followed in continuous loop if the robot is given the 'stop' command. 
+# ResearchTrack2_Assignment1
+## Ros-Ros2 bridge package:
+This is a package toshow how the ros package is package is controlled using ros1 simulation.this package is supposed to be integrated with a Ros1 environment which includes a Gazebo environment to control the non-holonomic robot and which has '/go_to_point' behaviour which is given in main branch.the connection between ros1 simulation and the ros2 package is done using ``` ros1_bridge ``` which is installed and compiled.After installation,``` ros1_bridge ``` package and then the ros2 packaged here will be running.using this user can control the robot in ros1 rom rs2 package.the two file ***state_machine.cpp*** and ***position_service.cpp*** is made as ros2 compenents to to control the ros1 enironment.
 
-Child script for Coppeliasim:
-- dr20_ros_ctrl:this file has code written in lua and it helps to control the dr20 mobile robot from the ros environment and it does not have action server implemented so when the 'stop' is given by the user,the robot will stop when it reaches the target.
-<img width="281" alt="image" src="https://user-images.githubusercontent.com/80621864/154863503-a7ca9ef1-44fe-40da-b905-4fe814e5341c.png">
+## Setting up the environment:
+- 1.cd~/my_ros/catkin_make 
 
-Two nodes are implemented as python scripts:
-- go_to_point: the node GoToPoint, which implements a service to drive a robot toward a point in the gazebo environment.This node publishes on the topics /cmd_vel the velocity of the robot and read its position by subscribing the topic '/odom'.
-- user_interface: the UserInterface, which asks the user to start/stop the robot, and calls the service implemented in the Finite State Machine node.
-
-Other two nodes are implemented in C++:
-- position_server: the node PositionServer, which implements a random position service.The service implemented in the Position Server node replies with random values for x, y, and theta, where x and y should be limited between some minimum and maximum values.
-- state_machine: The service implemented in the Robot FSM node gives the possibility to start or stop the robot behaviour.it monitors the request of a new goal pose when needed, sending it as a goal to 'go_to_point' action server.
-
-## Command for Running the package:
-1.A launch file has been provided to run all the ros nodes required for the control of robot in coppeliasim environment using ros:
-- source ROS1 workspace.
-- Vrep.launch: this launch file is used to launch all the required nodes.
-
+- 2.open a terminal and do the following steps:
 ```
-roslaunch rt2_assignment1 vrep.launch
+source ros2 environment(source ros2.sh) in which ##foxy environment is sourced
+cd~/my_ros2/src/git clone https://github.com/ros2/ros1_bridge.git
+#clone the bridge repository
+cd~/my_ros2/colcon build --symlink-install --packages-skip ros1_bridge
 ```
-2.To open the coppeliasim application:
-```../CoppeliaSim_Edu_V4_2_0_Ubuntu20_04/.coppeliaSim.sh``` 
- - this command will open the coppeliasim simulation.
+- 3.open another terminal
+```
+source ros12.sh,## in this both foxy and noetic environment is sourced
+cd ~/colcon_ws
+colcon build --packages-select ros1_bridge --cmake-force-configure
+#this process will take some sometime and after bridge between ROS1 and ROS2 will be done.
+```
+### How to make the bridge work:
+1.In order to make this package communication between ROS1 and ROS2 three steps are required:
+- In the first terminal,source the ros environment(noetic environment)
+```source /root/my_ros/devel/setup.bash``` 
+- Launch the simulation and the needed nodes from the ROS1 in a 1st terminal:
+```roslaunch rt2assignment1 ros_2.launch```
+#launch the robot in gazebo simulation.
+
+2.In the second terminal,Run the ros1_bridge package in a terminal:
+- source the ROS1and ROS2 enironment ```source /root/my_ros/devel/setup.bash``` and  ```source /root/my_ros2/devel/setup.bash```
+-  run the command ```ros2 run ros1_bridge dynamic_bridge``` 
+
+3.In the third terminal,Launch the container with the components implemented in this package in a shell with ROS2 sourced:
+- source ROS2 ```source /root/my_ros2/devel/setup.bash```
+- ```ros2 launch rt2_assignment1 bridge.py``` which contains the launch file script,after this given command the bridge will be working.
+
+For simplicity there is a bash script file named as ***bridge_ros2.sh*** whch contains all the things done above in a single command and a gnome shell will be opened and bridge can be operated there.
+
