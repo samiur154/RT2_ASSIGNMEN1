@@ -1,6 +1,7 @@
 # First Assignment of the rt2
 ## Action Package:
-This package helps to control the robot in the gazebo environment using 'got_to_point' behaviour.And a random goal poses is generated and robot aligns itself towards that point.it sets the linear velocity to drive to the goal position,and one the goal position is reached then it adjusts to attain the required angular position.if the robot is not stopped the process will be operated in a loop by generating new target destination and pose.the robot's 'go_to_point' is implemented as a action server so it can be preempted,and the robot can be stopped at any time and the robot will be restarted when the new goal is arrived. 
+
+This module facilitates 'got to point' behavior-based robot control in the gazebo environment. The robot then positions itself in relation to a randomly created target. It sets the linear speed to move to the desired position, and once there, it makes the necessary adjustments to get the desired angular position. The procedure will loop if the robot is not stopped, creating new goal destinations and poses. The robot can be preempted, stopped at any moment, and restarted when the new target is reached because its "go to point" is built as an action server.
 
 Two nodes are implemented as python scripts:
 - go_to_point: the node GoToPoint, which implements a service to drive a robot toward a point in the gazebo environment.This node publishes on the topics /cmd_vel the velocity of the robot and read its position by subscribing the topic '/odom'.
