@@ -4,7 +4,7 @@
   <name>rt2_assignment1</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="aatheethya2703@gmail.com">aatheethyaa</maintainer>
+  <maintainer email="samiur.me01gmail.com">samiurrahman</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
