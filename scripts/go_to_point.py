@@ -1,12 +1,14 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
 
 
 import rospy
 from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Odometry
 from tf import transformations
-from rt2_assignment1.srv import Position
 import math
+import actionlib
+import actionlib.msg
+import rt2_assignment1.msg
 
 # robot state variables
 position_ = Point()
@@ -14,6 +16,7 @@ yaw_ = 0
 position_ = 0
 state_ = 0
 pub_ = None
+
 
 # parameters for control
 yaw_precision_ = math.pi / 9  # +/- 20 degree allowed
@@ -25,13 +28,18 @@ ub_a = 0.6
 lb_a = -0.5
 ub_d = 0.6
 
+
+
+# action_server
+act_s = None
+
+# callbacks
 def clbk_odom(msg):
     global position_
     global yaw_
 
     # position
     position_ = msg.pose.pose.position
-
     # yaw
     quaternion = (
         msg.pose.pose.orientation.x,
@@ -53,10 +61,10 @@ def normalize_angle(angle):
         angle = angle - (2 * math.pi * angle) / (math.fabs(angle))
     return angle
 
+
 def fix_yaw(des_pos):
     desired_yaw = math.atan2(des_pos.y - position_.y, des_pos.x - position_.x)
     err_yaw = normalize_angle(desired_yaw - yaw_)
-    rospy.loginfo(err_yaw)
     twist_msg = Twist()
     if math.fabs(err_yaw) > yaw_precision_2_:
         twist_msg.angular.z = kp_a*err_yaw
@@ -67,9 +75,7 @@ def fix_yaw(des_pos):
     pub_.publish(twist_msg)
     # state change conditions
     if math.fabs(err_yaw) <= yaw_precision_2_:
-        #print ('Yaw error: [%s]' % err_yaw)
         change_state(1)
-
 
 def go_straight_ahead(des_pos):
     desired_yaw = math.atan2(des_pos.y - position_.y, des_pos.x - position_.x)
@@ -77,7 +83,6 @@ def go_straight_ahead(des_pos):
     err_pos = math.sqrt(pow(des_pos.y - position_.y, 2) +
                         pow(des_pos.x - position_.x, 2))
     err_yaw = normalize_angle(desired_yaw - yaw_)
-    rospy.loginfo(err_yaw)
 
     if err_pos > dist_precision_:
         twist_msg = Twist()
@@ -88,13 +93,12 @@ def go_straight_ahead(des_pos):
         twist_msg.angular.z = kp_a*err_yaw
         pub_.publish(twist_msg)
     else: # state change conditions
-        #print ('Position error: [%s]' % err_pos)
         change_state(2)
-
-    # state change conditions
+ 
     if math.fabs(err_yaw) > yaw_precision_:
         #print ('Yaw error: [%s]' % err_yaw)
         change_state(0)
+
 
 def fix_final_yaw(des_yaw):
     err_yaw = normalize_angle(des_yaw - yaw_)
@@ -109,40 +113,76 @@ def fix_final_yaw(des_yaw):
     pub_.publish(twist_msg)
     # state change conditions
     if math.fabs(err_yaw) <= yaw_precision_2_:
-        #print ('Yaw error: [%s]' % err_yaw)
         change_state(3)
-        
+
+
 def done():
     twist_msg = Twist()
     twist_msg.linear.x = 0
     twist_msg.angular.z = 0
     pub_.publish(twist_msg)
-    
-def go_to_point(req):
+
+
+def planning(goal):
+
+    global state_,desired_position
+
+
     desired_position = Point()
-    desired_position.x = req.x
-    desired_position.y = req.y
-    des_yaw = req.theta
-    change_state(0)
-    while True:
-    	if state_ == 0:
-    		fix_yaw(desired_position)
-    	elif state_ == 1:
-    		go_straight_ahead(desired_position)
-    	elif state_ == 2:
-    		fix_final_yaw(des_yaw)
-    	elif state_ == 3:
-    		done()
-    		break
-    return True
+    desired_position.x = goal.x
+    desired_position.y = goal.y
+    des_yaw = goal.theta
+
+    state_=0
+    success = True
+
+    feedback = rt2_assignment1.msg.PlanningFeedback()
+    result = rt2_assignment1.msg.PlanningResult()
+
+    while not rospy.is_shutdown():
+        if act_s.is_preempt_requested():
+            rospy.loginfo('Goal was preempted')
+            act_s.set_preempted()
+            done()
+
+            success = False
+            break
+        
+        elif state_ == 0:
+            	#feedback.stat = "Fixing the yaw"
+            	fix_yaw(desired_position)
+        elif state_ == 1:
+            	#feedback.stat = "Angle aligned"
+            	go_straight_ahead(desired_position)
+        elif state_ == 2:
+            	#feedback.stat = "position reached,fixing angle!"
+            	fix_final_yaw(des_yaw)
+        elif state_ == 3:
+            	#feedback.stat = "Target reached!"
+            	done()
+            	#result.ok = True
+            	act_s.set_succeeded(result)
+            	break
+      
+        else:
+          rospy.logerr('Unknown state!')
+
+
 
 def main():
-    global pub_
+    global pub_,active_, act_s
     rospy.init_node('go_to_point')
     pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
     sub_odom = rospy.Subscriber('/odom', Odometry, clbk_odom)
-    service = rospy.Service('/go_to_point', Position, go_to_point)
-    rospy.spin()
+    act_s = actionlib.SimpleActionServer(
+        '/go_to_point', rt2_assignment1.msg.PlanningAction, planning, auto_start=False)
+    act_s.start()
+
+
+
+    rate = rospy.Rate(20)
+    while not rospy.is_shutdown():
+        rate.sleep()
 
 if __name__ == '__main__':
     main()
