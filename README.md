@@ -14,7 +14,7 @@ Other two nodes are implemented in C++:
 - position_server: the node PositionServer, which implements a random position service.The service implemented in the Position Server node replies with random values for x, y, and theta, where x and y should be limited between some minimum and maximum values.
 - state_machine: The service implemented in the Robot FSM node gives the possibility to start or stop the robot behaviour.it monitors the request of a new goal pose when needed, sending it as a goal to 'go_to_point' action server.
 
-![alt text](coppeliaros.gif image.jpeg)
+![alt text](image.jpeg)
 
 ## Command for Running the package:
 1.A launch file has been provided to run all the ros nodes required for the control of robot in coppeliasim environment using ros:
